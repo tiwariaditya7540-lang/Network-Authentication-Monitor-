@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Authentication Monitor - SOC</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b132b !important;
+            color: #ffffff !important;
+        }
+        .custom-card {
+            background-color: #1c2541 !important;
+            border: 1px solid #48cae4 !important;
+        }
+        .custom-input {
+            background-color: #0b132b !important;
+            color: #ffffff !important;
+            border: 1px solid #90e0ef !important;
+        }
+        .custom-input:focus {
+            background-color: #0b132b !important;
+            color: #ffffff !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+        label, p, h1, h4, span {
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <header class="pb-3 mb-4 border-bottom border-info d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 m-0 text-white fw-bold">🛡️ Network Authentication Monitor</h1>
+                <p class="text-info m-0 small fw-semibold">Security Operations Center & Anomaly Detection Dashboard</p>
+            </div>
+            <button onclick="clearHistory()" class="btn btn-outline-warning btn-sm fw-bold px-3">Clear History</button>
+        </header>
+
+        <div class="row g-4">
+            <!-- Simulation Panel -->
+            <div class="col-md-5">
+                <div class="card custom-card p-4 h-100 shadow-lg">
+                    <h4 class="h5 mb-3 text-warning fw-bold">Login Simulator</h4>
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Source IP Address</label>
+                        <input type="text" id="ipInput" class="form-control custom-input fw-semibold" value="192.168.10.45">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Target Username</label>
+                        <input type="text" id="userInput" class="form-control custom-input fw-semibold" value="aditya78_root">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Password</label>
+                        <input type="password" id="passInput" class="form-control custom-input fw-semibold" value="wrongpassword123">
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button onclick="attemptLogin()" class="btn btn-primary fw-bold py-2">Attempt Login (Verify Credentials)</button>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        💡 <em>Hint: Correct pass is <b>aditya123</b>. Try wrong pass 5 times to trigger Brute-Force alert!</em>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitoring & Feedback Panel -->
+            <div class="col-md-7">
+                <div class="card custom-card p-4 h-100 shadow-lg">
+                    <h4 class="h5 mb-3 text-warning fw-bold">System Status & Alerts</h4>
+                    
+                    <div id="statusMessage" class="mb-3"></div>
+
+                    <div id="alertContainer" class="overflow-auto p-3 rounded" style="max-height: 280px; background-color: #0b132b; border: 1px solid #48cae4;">
+                        {% if alerts %}
+                            {% for alert in alerts %}
+                                <div class="alert alert-danger bg-danger text-white border-0 small mb-2 fw-bold shadow-sm">
+                                    {{ alert }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-light small fst-italic m-0">✓ System secure. No anomaly patterns detected in current sliding window.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function attemptLogin() {
+            const payload = {
+                ip: document.getElementById('ipInput').value,
+                username: document.getElementById('userInput').value,
+                password: document.getElementById('passInput').value
+            };
+
+            fetch('/api/v1/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusDiv = document.getElementById('statusMessage');
+                if(data.status === 'success') {
+                    statusDiv.innerHTML = `<div class="alert alert-success bg-success text-white border-0 small mb-2 m-0 fw-bold">✅ ${data.message}</div>`;
+                } else {
+                    if (data.alert_triggered) {
+                        location.reload();
+                    } else {
+                        statusDiv.innerHTML = `<div class="alert alert-warning bg-warning text-dark border-0 small mb-2 m-0 fw-bold">⚠️ ${data.message}</div>`;
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function clearHistory() {
+            fetch('/api/v1/clear-history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>s
